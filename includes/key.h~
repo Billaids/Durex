@@ -1,0 +1,24 @@
+#ifndef KEY_H
+#define KEY_H
+
+#include "manix.h"
+#include <string.h>
+#include <math.h>
+#include <stdint.h>
+#include <assert.h>
+
+/*
+ * client
+ */
+uint64_t	powmodp(uint64_t a, uint64_t b, uint64_t P);
+uint64_t	rand_uint64(void);
+int		is_prime(int num);
+
+int		key_exchange(int sk);
+
+/*
+ * serveur
+ */
+void init_key(t_client c);
+int handle_keys(unsigned char *buf, t_client c);
+#endif
