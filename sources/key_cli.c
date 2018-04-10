@@ -118,7 +118,7 @@ int key_exchange(t_client *c, unsigned char *buf)
             printf("2nd step : geting Pkey A from serv, create private key c->b and send compute pkey B to the serv ..\n");
 	    //c->x  =(unsigned long long int)( buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24));
 	    str = (char *)buf;
-	    c->x = (unsigned long long int)&str; 
+	    c->x = ft_atollu((const char *)buf); 
 	    c->b = rand_uint64();
 	    
 	    c->y = powmodp(c->g, c->b, c->p);

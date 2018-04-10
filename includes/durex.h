@@ -130,4 +130,5 @@ void init_key(t_client *c);
 int handle_keys(unsigned char *buf, t_client *c);
 int is_prime(int num);
 uint64_t powmodp(uint64_t a, uint64_t b, uint64_t P);
+uint64_t    ft_atollu(const char *str);
 #endif

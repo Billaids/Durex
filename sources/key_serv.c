@@ -47,56 +47,57 @@ void init_key(t_client *c)
 int handle_keys(unsigned char *buf, t_client *c)
 {
 
-  char *x_str = NULL;
-  char *s_str = NULL;
-  char *p_str = NULL;
+	char *x_str = NULL;
+	char *s_str = NULL;
+	char *p_str = NULL;
     char *ptr;
-  char *str = NULL;
-  uint64_t tmp = 0;
-  /*
-   * get Public key p from the client
-   * set his private key a 
-   * send the generated key x : g^x MOD p
-   */
-  if (!c->p)
+	char *str = NULL;
+	uint64_t tmp = 0;
+	
+	/*
+	 * get Public key p from the client
+	 * set his private key a 
+	 * send the generated key x : g^x MOD p
+	 */
+	if (!c->p)
     {
         daemon_report(LOG_INFO, "Recv public key P ...");
-	// c->p  = (unsigned long long int)(buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24)  );
-      // check c->p return error if is nor prime
-	str = (char *)buf;
-	//c->p = (unsigned long long int)&str;
-	tmp = strtoll((const char * restrict )str, &ptr, 10);
-	c->p = tmp;
-      daemon_report(LOG_INFO, "Getting public key P ...");
-      p_str = ft_itoa(c->p);
-      daemon_report(LOG_INFO, p_str);
+		// c->p  = (unsigned long long int)(buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24)  );
+		// check c->p return error if is nor prime
+		str = (char *)buf;
+		//c->p = (unsigned long long int)&str;
+		tmp = ft_atollu(str);//strtoll((const char * restrict )str, &ptr, 10);
+		c->p = tmp;
+		daemon_report(LOG_INFO, "Getting public key P ...");
+		p_str = ft_itoa(c->p);
+		daemon_report(LOG_INFO, p_str);
 
 
       
-      c->a = 77100074583237325;
+		c->a = 77100074583237325;
 
-      c->x = powmodp(c->g, c->a, c->p);
+		c->x = powmodp(c->g, c->a, c->p);
       
-      x_str = ft_itoa(c->x);
-      daemon_report(LOG_INFO, "Sending generated public key X ...");
-      write (c->sock, x_str, strlen(x_str));
-      //      if (x_str)
-      //free(x_str);
-      daemon_report(LOG_INFO, "Public key send.");
-      //if write fail return error
+		x_str = ft_itoa(c->x);
+		daemon_report(LOG_INFO, "Sending generated public key X ...");
+		write (c->sock, x_str, strlen(x_str));
+		//      if (x_str)
+		//free(x_str);
+		daemon_report(LOG_INFO, "Public key send.");
+		//if write fail return error
     }
   
-  /*
-   * get the public key Y from the client 
-   * generate a signature of public keys X and Y
-   * the create the shared key 
-   */
-  else if (!c->y)
+	/*
+	 * get the public key Y from the client 
+	 * generate a signature of public keys X and Y
+	 * the create the shared key 
+	 */
+	else if (!c->y)
     {
-      daemon_report(LOG_INFO, "Phase 2 : get Pkey Y from the client,generate signature of  Y + X to the client .");
+		daemon_report(LOG_INFO, "Phase 2 : get Pkey Y from the client,generate signature of  Y + X to the client .");
       //      c->y  = (unsigned long long int)(buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24));
       str = (char *)buf;
-      c->y = (unsigned long long int)&str;
+      c->y = ft_atollu((const char *)str);
   //need to genreate a singatue from Xand Y // here sign = 1234
       write (c->sock, "1234", 4);
       daemon_report(LOG_INFO, "Signature send.");

@@ -89,4 +89,6 @@ int             is_prime(int num);
 
 void		init_key(t_client *c);
 int             key_exchange(t_client *c, unsigned char *buf);
+
+uint64_t	ft_atollu(const char *str);
 #endif

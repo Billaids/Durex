@@ -13,7 +13,7 @@ mul_mod_p(uint64_t a, uint64_t b, uint64_t P)
             t = P-a;
             if ( m >= t) 
                 m -= t;
-             else
+			else
                 m += a;
         }
         if (a >= P - a) 
@@ -31,7 +31,7 @@ pow_mod_p(uint64_t a, uint64_t b, uint64_t P)
     uint64_t t = 0;
 
     if (b == 1) 
-      return a;
+		return a;
 	
 	t = pow_mod_p(a, b >> 1, P);
     t = mul_mod_p(t, t, P);
@@ -80,69 +80,100 @@ int is_prime(int num)
     return 1;
 }
 
-#include <stdlib.h>
-#include <stdio.h>
+static int     ft_isdigit(int c)
+{
+    if (c >= '0' && c <= '9')
+        return (1);
+    else
+        return (0);
+}
+
+uint64_t                ft_atollu(const char *str)
+{
+    uint64_t                res;
+    unsigned long long int  i;
+    if (!str)
+        return 0;
+    i = 0;
+    res = 0;
+    while (*str == ' ' || *str == '\t' || *str == '\n' || *str == '\v' ||
+		   *str == '\r' || *str == '\f')
+        str++;
+    if (*str == '-' || *str == '+')
+        str++;
+    while (*str == '0')
+        str++;
+    if (strlen(str) > 20)
+        return (0);
+    while (ft_isdigit(*str) && *str != '\0')
+    {
+        i = (int)(*str - '0');
+        res = (res * 10) + i;
+        str++;
+    }
+    return (res);
+}
 
 /*int main (int ac, char **av)
-{
-	unsigned long long int  P, G, x, a, y, ka, kb, j;
+  {
+  unsigned long long int  P, G, x, a, y, ka, kb, j;
 
-	unsigned long long  b;
-	j = 0;
-	int n, i = 3, count, c;
-	P = 0;
-	n = 9706108;
-    srand(time(NULL));
+  unsigned long long  b;
+  j = 0;
+  int n, i = 3, count, c;
+  P = 0;
+  n = 9706108;
+  srand(time(NULL));
 
-			// Both the persons will be agreed upon the
-			// public keys G and P
-	// A prime number P is taken
-	while (!is_prime(rand_uint64()))
-		P  = rand_uint64();
-		;
+  // Both the persons will be agreed upon the
+  // public keys G and P
+  // A prime number P is taken
+  while (!is_prime(rand_uint64()))
+  P  = rand_uint64();
+  ;
 
-			printf("The value of P : %lld\n", P);
+  printf("The value of P : %lld\n", P);
 //			while (G < P/2)
-			{
-				G = 5;//i % P;//9706108; // A primitve root for P, G is taken
-				printf("The value of G : %lld\n\n", G);
+{
+G = 5;//i % P;//9706108; // A primitve root for P, G is taken
+printf("The value of G : %lld\n\n", G);
 
-				// Alice will choose the private key a
-				a = 77100074583237325; // a is the chosen private key
-				printf("The private key a for Alice : %lld\n", a);
-				x = powmodp(G, a, P); // gets the generated key
-				printf("The public shared key x (Alice -> Bob) : %lld\n\n", x);
+// Alice will choose the private key a
+a = 77100074583237325; // a is the chosen private key
+printf("The private key a for Alice : %lld\n", a);
+x = powmodp(G, a, P); // gets the generated key
+printf("The public shared key x (Alice -> Bob) : %lld\n\n", x);
 
-				// Bob will choose the private key b
-				b = 91958578577973254; // b is the chosen private key
-				printf("The private key b for Bob : %lld\n", b);
-				y = powmodp(G, b, P); // gets the generated key
-				printf("The public shared key y (Bob -> Alice) : %lld\n\n", y);
+// Bob will choose the private key b
+b = 91958578577973254; // b is the chosen private key
+printf("The private key b for Bob : %lld\n", b);
+y = powmodp(G, b, P); // gets the generated key
+printf("The public shared key y (Bob -> Alice) : %lld\n\n", y);
 
-				// Generating the secret key after the exchange
-				// of keys
-				ka = powmodp(y, a, P); // Secret key for Alice
-				kb = powmodp(x, b, P); // Secret key for Bob
+// Generating the secret key after the exchange
+// of keys
+ka = powmodp(y, a, P); // Secret key for Alice
+kb = powmodp(x, b, P); // Secret key for Bob
 
-				if (kb == ka && ka > 0 && G != 1)
-					fprintf(stderr, "G = %llu   P = %llu\n",G, P);
+if (kb == ka && ka > 0 && G != 1)
+fprintf(stderr, "G = %llu   P = %llu\n",G, P);
 //	x = 0; y = 0;
-				j++;
-				//			}
-				//j = 0;
-				//count++;
-				//}
-				//i++;
-	}
+j++;
+//			}
+//j = 0;
+//count++;
+//}
+//i++;
+}
 
-    printf("Secret key for the Alice is : %llu (shared bob key ^ priv alice key  mod Prime)\n", ka)\
-		;
-    printf("Secret Key for the Bob is : %llu\n", kb);
-	return 0;
+printf("Secret key for the Alice is : %llu (shared bob key ^ priv alice key  mod Prime)\n", ka)\
+;
+printf("Secret Key for the Bob is : %llu\n", kb);
+return 0;
 }
 */
-/*
-https://tools.ietf.org/html/rfc2409#section-6.2
+ /*
+   https://tools.ietf.org/html/rfc2409#section-6.2
 
-https://crypto.stackexchange.com/questions/820/how-does-one-calculate-a-primitive-root-for-diffie-hellman
-*/
+   https://crypto.stackexchange.com/questions/820/how-does-one-calculate-a-primitive-root-for-diffie-hellman
+ */
