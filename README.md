@@ -1,4 +1,4 @@
-# durex
+# Durex
 
 ## Fonctionality
 
