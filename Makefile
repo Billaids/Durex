@@ -10,14 +10,17 @@
 #                                                                              #
 # **************************************************************************** #
 
-SERVER			=	Durex
-SERVER_DUP		=	/usr/sbin/Durex
-LOCK_FILE		=	/var/lock/durex.lock
-CLIENT			=	Manix
-INC				=	-Iincludes
-DIR				=	./sources/
+# Common
 CC				=	gcc
 CFLAGS			=	-Wall -Wextra -Werror
+INC				=	-Iincludes
+DIR				=	./sources/
+
+# Server
+SERVER			=	Durex
+SERVER_DUP		=	/usr/sbin/Durex
+SERVER_LOGS		=	/var/log/durex/durex.log
+SERVER_LOCK		=	/var/lock/durex.lock
 SRC_SERVER		=	durex \
 					signal \
 					path \
@@ -29,13 +32,20 @@ SRC_SERVER		=	durex \
 					client \
 					shell \
 					key_serv \
-					key_utils_serv
-SRC_CLIENT		=	manix key_utils_cli key_cli
+					key_utils_serv \
+					rj \
+					librj
+
 OBJ_SERVER		=	$(addsuffix .o, $(SRC_SERVER))
-OBJ_CLIENT		=	$(addsuffix .o, $(SRC_CLIENT))
 TGT_SERVER		=	$(addprefix $(DIR), $(OBJ_SERVER))
+
+# Client
+CLIENT			=	Manix
+SRC_CLIENT		=	manix key_cli key_utils_cli rj librj
+OBJ_CLIENT		=	$(addsuffix .o, $(SRC_CLIENT))
 TGT_CLIENT		=	$(addprefix $(DIR), $(OBJ_CLIENT))
 
+# Rules
 all: $(SERVER) $(CLIENT)
 
 $(SERVER): $(TGT_SERVER)
@@ -51,8 +61,12 @@ clean:
 	rm -f $(TGT_SERVER) $(TGT_CLIENT)
 
 fclean: clean
-	rm -rf $(SERVER) $(CLIENT) $(SERVER_DUP) $(LOCK_FILE)
+	rm -rf $(SERVER) $(CLIENT) $(SERVER_DUP)
 
 re: fclean all
 
+lclean:
+	rm -f $(SERVER_LOGS) $(SERVER_LOCK) $(SERVER_DUP)
+
+# Phony
 .PHONY: all clean fclean re

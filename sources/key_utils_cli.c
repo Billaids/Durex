@@ -1,5 +1,8 @@
 #include "manix.h"
 
+/*
+ * a * b % P
+ */
 static inline uint64_t
 mul_mod_p(uint64_t a, uint64_t b, uint64_t P)
 {
@@ -13,7 +16,7 @@ mul_mod_p(uint64_t a, uint64_t b, uint64_t P)
             t = P-a;
             if ( m >= t) 
                 m -= t;
-             else
+			else
                 m += a;
         }
         if (a >= P - a) 
@@ -25,13 +28,16 @@ mul_mod_p(uint64_t a, uint64_t b, uint64_t P)
     return m;
 }
 
+/*
+ * a ^ b % P
+ */
 static inline uint64_t
 pow_mod_p(uint64_t a, uint64_t b, uint64_t P)
 {
     uint64_t t = 0;
-	
-	if (b == 1) 
-        return a;
+
+    if (b == 1) 
+		return a;
 	
 	t = pow_mod_p(a, b >> 1, P);
     t = mul_mod_p(t, t, P);
@@ -40,29 +46,33 @@ pow_mod_p(uint64_t a, uint64_t b, uint64_t P)
     return t;
 }
 
-// calc a^b % p
+/*
+ * calc a^b % p
+ */
 uint64_t
 powmodp(uint64_t a, uint64_t b, uint64_t P) 
 {
+
     if (a > P)
         a %= P;
     return pow_mod_p(a, b, P);
 }
 
-uint64_t rand_uint64(void) {
+/*
+ * create a big 64 bits int random 
+ */
+uint64_t rand_uint64(void)
+{
     uint64_t r = 0;
-    for (int i=0; i<64; i += 30) {
+    
+    for (int i = 0; i < 64; i += 30)
         r = r*((uint64_t)RAND_MAX + 1) + rand();
-    }
     return r;
 }
-uint64_t rand_uint64_slow(void) {
-    uint64_t r = 0;
-    for (int i=0; i<64; i++) {
-        r = r*2 + rand()%2;
-    }
-    return r;
-}
+
+/*
+ * check if num is prime ret 1 if success
+ */
 int is_prime(int num)
 {
     if (num <= 1) return 0;
@@ -75,7 +85,10 @@ int is_prime(int num)
     return 1;
 }
 
-int     ft_isdigit(int c)
+/*
+ * ft_isdigit()
+ */
+static int     ft_isdigit(int c)
 {
     if (c >= '0' && c <= '9')
         return (1);
@@ -83,6 +96,9 @@ int     ft_isdigit(int c)
         return (0);
 }
 
+/*
+ * char to llu 
+ */
 uint64_t                ft_atollu(const char *str)
 {
     uint64_t                res;
@@ -92,7 +108,7 @@ uint64_t                ft_atollu(const char *str)
     i = 0;
     res = 0;
     while (*str == ' ' || *str == '\t' || *str == '\n' || *str == '\v' ||
-                *str == '\r' || *str == '\f')
+		   *str == '\r' || *str == '\f')
         str++;
     if (*str == '-' || *str == '+')
         str++;
@@ -110,66 +126,60 @@ uint64_t                ft_atollu(const char *str)
 }
 
 
-/*int main (int ac, char **av)
-{
-	unsigned long long int  P, G, x, a, y, ka, kb, j;
 
-	unsigned long long  b;
-	j = 0;
-	int n, i = 3, count, c;
-	P = 0;
-	n = 9706108;
-    srand(time(NULL));
-
-			// Both the persons will be agreed upon the
-			// public keys G and P
-	// A prime number P is taken
-	while (!is_prime(rand_uint64()))
-		P  = rand_uint64();
-		;
-
-			printf("The value of P : %lld\n", P);
-//			while (G < P/2)
-			{
-				G = 5;//i % P;//9706108; // A primitve root for P, G is taken
-				printf("The value of G : %lld\n\n", G);
-
-				// Alice will choose the private key a
-				a = 77100074583237325; // a is the chosen private key
-				printf("The private key a for Alice : %lld\n", a);
-				x = powmodp(G, a, P); // gets the generated key
-				printf("The public shared key x (Alice -> Bob) : %lld\n\n", x);
-
-				// Bob will choose the private key b
-				b = 91958578577973254; // b is the chosen private key
-				printf("The private key b for Bob : %lld\n", b);
-				y = powmodp(G, b, P); // gets the generated key
-				printf("The public shared key y (Bob -> Alice) : %lld\n\n", y);
-
-				// Generating the secret key after the exchange
-				// of keys
-				ka = powmodp(y, a, P); // Secret key for Alice
-				kb = powmodp(x, b, P); // Secret key for Bob
-
-				if (kb == ka && ka > 0 && G != 1)
-					fprintf(stderr, "G = %llu   P = %llu\n",G, P);
-//	x = 0; y = 0;
-				j++;
-				//			}
-				//j = 0;
-				//count++;
-				//}
-				//i++;
-	}
-
-    printf("Secret key for the Alice is : %llu (shared bob key ^ priv alice key  mod Prime)\n", ka)\
-		;
-    printf("Secret Key for the Bob is : %llu\n", kb);
-	return 0;
-}
-*/
 /*
-https://tools.ietf.org/html/rfc2409#section-6.2
+ * llu to char 
+ */
+#define BASE_NBRS "0123456789abcdef"
 
-https://crypto.stackexchange.com/questions/820/how-does-one-calculate-a-primitive-root-for-diffie-hellman
-*/
+char	*ft_revstr(char *str)
+{
+	size_t	i;
+	char	c;
+	char	*save;
+
+	save = str;
+	i = strlen(str);
+	while (i >= 2)
+	{
+		c = *str;
+		*str = str[i - 1];
+		str[i - 1] = c;
+		str++;
+		i -= 2;
+	}
+	return (save);
+}
+char	*ft_itoa_c(uint64_t value, char *str, int base)
+{
+	char	*save;
+	int		i;
+
+	if (base > 36 || base < 2 || !(save = str))
+		return (NULL);
+	else if (value == 0)
+		*(str++) = '0';
+	i = 0;
+	while (value != 0)
+	{
+		str[i++] = BASE_NBRS[value % base];
+		value /= base;
+	}
+	str[i] = '\0';
+	ft_revstr(str);
+	return (save);
+}
+char	*ft_itoa_a(uint64_t value, int base)
+{
+	char	*str;
+	int		i;
+	if (value > UINT64_MAX)
+	  return NULL;
+	i = 20;
+	if (i == 0 || base > 36 || base < 2)
+		return (NULL);
+	str = (char*)malloc(sizeof(char) * i + 1);
+	if (!str)
+		return (NULL);
+	return (ft_itoa_c(value, str, base));
+}

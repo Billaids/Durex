@@ -36,6 +36,8 @@ t_client	*client_new(int sock)
 	clt->sock = sock;
 	clt->log = LOGIN_PENDING;
 	clt->shell = FALSE;
+	clt->is_key = FALSE;
+	clt->sched = NULL;
 	clt->pid = -1;
 	clt->next = NULL;
 	return (clt);
@@ -70,6 +72,8 @@ void		client_free(t_client **node)
 	}
 	if (close((*node)->sock) != -1)
 		daemon_report(LOG_INFO, "Client socket closed.");
+	if ((*node)->sched != NULL)
+	  free((*node)->sched);
 	free(*node);
 	*node = NULL;
 }

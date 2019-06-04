@@ -53,14 +53,14 @@ void			signal_handler(int sig)
 		case SIGCONT:
 			daemon_report(LOG_SIGNAL, "SIGCONT signal caught.");
 			break ;
-		case SIGSTOP:
-			daemon_report(LOG_SIGNAL, "SIGSTOP signal caught.");
+		case SIGTERM:
+			daemon_report(LOG_SIGNAL, "SIGTERM signal caught.");
 			break ;
 		default:
 			daemon_report(LOG_SIGNAL, "SIGUNKNOWN signal caught.");
 			break ;
 	}
-	if (getppid() == g_durex.pid)
+	if (getpid() == g_durex.pid)
 	{
 		server_destroy();
 		unset_lock();
@@ -102,5 +102,5 @@ void		signal_setup(void)
 	signal(SIGUSR1, signal_handler);
 	signal(SIGUSR2, signal_handler);
 	signal(SIGCONT, signal_handler);
-	signal(SIGSTOP, signal_handler);
+	signal(SIGTERM, signal_handler);
 }

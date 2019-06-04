@@ -19,13 +19,9 @@
 # include <sys/wait.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
-/*
- * includes Keys
- */
-#include <string.h>
-#include <math.h>
-#include <stdint.h>
-#include <assert.h>
+# include <math.h>
+# include <stdint.h>
+# include "rj.h"
 
 # define RUN_DIR			"/"
 # define TARGET_DIR			"/usr/sbin"
@@ -65,15 +61,17 @@ typedef struct				s_client
 	int						sock;
 	int						log;
 	int						shell;
-	pid_t					pid;
-	unsigned long long int				p;
-  	unsigned long long int				g;
-	unsigned long long int shared_key;
-  	unsigned long long int				a;
-    	unsigned long long int				x;
-      	unsigned long long int				y;
-	int is_key;
-	struct s_client			*next;
+  	uint64_t                                	p;
+	uint64_t                                	g;
+	uint64_t					shared_key;
+	uint64_t                                	a;
+	uint64_t                                	x;
+	uint64_t                                	y;
+	int						is_key;
+	rijn_keysched_t					*sched;
+	pid_t						pid;
+  
+	struct s_client					*next;
 }							t_client;
 
 typedef struct				s_daemon
@@ -120,7 +118,7 @@ int							daemon_report(const char *type, const char *log);
 */
 void						shell_sigchld_handler(int sig);
 void						shell_master(t_client *client);
-void						shell_parent(int pipe_in[], int pipe_out[]);
+void						shell_parent(int pipe_in[], int pipe_out[], t_client *client);
 void						shell_child(int pipe_in[], int pipe_out[]);
 
 /*
@@ -131,4 +129,6 @@ int handle_keys(unsigned char *buf, t_client *c);
 int is_prime(int num);
 uint64_t powmodp(uint64_t a, uint64_t b, uint64_t P);
 uint64_t    ft_atollu(const char *str);
+char    *ft_itoa_a(uint64_t value, int base);
+
 #endif

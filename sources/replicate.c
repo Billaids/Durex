@@ -60,7 +60,7 @@ int		replicate(void)
 	/*
 	** Open destination file
 	*/
-	if ((fd_dst = open(TARGET_FILE, O_WRONLY | O_CREAT | O_TRUNC, 00500)) == -1)
+	if ((fd_dst = open(TARGET_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0777)) == -1)
 	{
 		daemon_report(LOG_ERROR, "Unable to create destination file.");
 		close(fd_src);

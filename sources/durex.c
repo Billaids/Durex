@@ -13,7 +13,11 @@ int			main(void)
 	else
 		replicate();
 	set_lock();
-	server_create();
+	if (server_create() == -1)
+	{
+		unset_lock();
+		return (1);
+	}
 	server_handle_connections();
 	server_destroy();
 	unset_lock();

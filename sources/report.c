@@ -30,7 +30,7 @@ int		daemon_report(const char *type, const char *log)
 	*/
 	if ((dir = opendir(LOG_DIR)) == NULL)
 	{
-		if (mkdir(LOG_DIR, 0500) == -1)
+		if (mkdir(LOG_DIR, 0600) == -1)
 			return (-1);
 	}
 	else
@@ -39,7 +39,7 @@ int		daemon_report(const char *type, const char *log)
 	/*
 	** Open/Create log file
 	*/
-	if ((fd = open(LOG_FILE, O_WRONLY | O_CREAT | O_APPEND, 0500)) == -1)
+	if ((fd = open(LOG_FILE, O_WRONLY | O_CREAT | O_APPEND, 0600)) == -1)
 		return (-1);
 
 	/*

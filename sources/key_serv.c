@@ -1,35 +1,8 @@
 #include "durex.h"
 
-char    *ft_itoa(unsigned long long int n)
-{
- 	char    *resstring;
-
-	resstring = malloc(sizeof(char) * 26);
-	bzero(resstring, 26);
-	if (n > 1 && resstring)
-	{
-         	*--resstring = '0' + (n % 10);
-		n /= 10;
-		while (n != 0)
-		{
-                 	*--resstring = '0' + (n % 10);
-			n /= 10;
-		}
-	}
-        else if (resstring)
-	{
-         	*--resstring = '0' - (n % 10);
-		n /= 10;
-		while (n != 0)
-		{
-                 	*--resstring = '0' - (n % 10);
-			n /= 10;
-		}
-                *--resstring = '-';
-	}
-        return (resstring);
-}
-
+/*
+ * inti all keys of the struct client  
+ */
 void init_key(t_client *c)
 {
   daemon_report(LOG_INFO, "Initalisation of keys...");
@@ -44,47 +17,59 @@ void init_key(t_client *c)
 
 }
 
+/*
+ * exchange of keys : 
+ * - server get the public key P frome the client
+ * - server generate his public key X and send it to the user
+ * - server recv from the client his public key Y
+ * - generate a signature of thos 2 keys send it back 
+ * - generate the shared key;
+ */
+
 int handle_keys(unsigned char *buf, t_client *c)
 {
 
 	char *x_str = NULL;
 	char *s_str = NULL;
 	char *p_str = NULL;
-    char *ptr;
-	char *str = NULL;
-	uint64_t tmp = 0;
+	char *other = NULL;
 	
+	if (!c->p)
+	  {
 	/*
 	 * get Public key p from the client
 	 * set his private key a 
 	 * send the generated key x : g^x MOD p
 	 */
-	if (!c->p)
-    {
-        daemon_report(LOG_INFO, "Recv public key P ...");
-		// c->p  = (unsigned long long int)(buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24)  );
-		// check c->p return error if is nor prime
-		str = (char *)buf;
-		//c->p = (unsigned long long int)&str;
-		tmp = ft_atollu(str);//strtoll((const char * restrict )str, &ptr, 10);
-		c->p = tmp;
-		daemon_report(LOG_INFO, "Getting public key P ...");
-		p_str = ft_itoa(c->p);
-		daemon_report(LOG_INFO, p_str);
+	    
+	    daemon_report(LOG_INFO, "Recving public key P ... buf = ");
+	    daemon_report(LOG_INFO, (char *)buf);
+		c->p = ft_atollu((char *)buf);
+		if (c->p == 0)
+		  {
+		  daemon_report(LOG_INFO, "error c->p == 0");
+		  return -2;
+		  }
+		p_str = ft_itoa_a(c->p, 10);
 
+		daemon_report(LOG_INFO, "Public key P recved.");
+		if (p_str != NULL)
+		  free(p_str);
 
-      
 		c->a = 77100074583237325;
 
 		c->x = powmodp(c->g, c->a, c->p);
       
-		x_str = ft_itoa(c->x);
-		daemon_report(LOG_INFO, "Sending generated public key X ...");
-		write (c->sock, x_str, strlen(x_str));
-		//      if (x_str)
-		//free(x_str);
-		daemon_report(LOG_INFO, "Public key send.");
-		//if write fail return error
+		if ((x_str = ft_itoa_a(c->x, 10)) == NULL)
+		  return -2;
+
+		daemon_report(LOG_INFO, "Sending generated public key X");
+		if (write (c->sock, x_str, strlen(x_str)) <= 0)
+		  return -2;
+		daemon_report(LOG_INFO, x_str);
+		if (x_str)
+		  free(x_str);
+		daemon_report(LOG_INFO, "Public key X send.");
     }
   
 	/*
@@ -94,25 +79,32 @@ int handle_keys(unsigned char *buf, t_client *c)
 	 */
 	else if (!c->y)
     {
-		daemon_report(LOG_INFO, "Phase 2 : get Pkey Y from the client,generate signature of  Y + X to the client .");
-      //      c->y  = (unsigned long long int)(buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24));
-      str = (char *)buf;
-      c->y = ft_atollu((const char *)str);
-  //need to genreate a singatue from Xand Y // here sign = 1234
-      write (c->sock, "1234", 4);
-      daemon_report(LOG_INFO, "Signature send.");
+      daemon_report(LOG_INFO, "Get Pkey Y from the client");
+	    c->y = ft_atollu((const char *)buf);
 
+	    /*
+	     * create a signature like PubKey(X - Y)
+	     */
+	    daemon_report(LOG_INFO, "Generate signature...");
+	    other = ft_itoa_a(c->x - c->y, 10);
+	    daemon_report(LOG_INFO, other);
+	    if (write (c->sock, other, strlen(other)) <= 0)
+	      return -2;
+	    if (other)
+	      free(other);
+	    daemon_report(LOG_INFO, "Signature send.");
 
-      /*
-       * calcul of the sharedkey
-       */
-      
-      c->shared_key = powmodp(c->y, c->a, c->p);
-      daemon_report(LOG_INFO, "Shared key created :");
-      s_str = ft_itoa(c->shared_key);
-      
-      daemon_report(LOG_INFO, s_str);
-      
+	    /*
+	     * calcul of the sharedkey
+	     */
+	    c->shared_key = powmodp(c->y, c->a, c->p);
+	    daemon_report(LOG_INFO, "Shared key created :");
+	    if ((s_str = ft_itoa_a(c->shared_key, 10)) == NULL )
+	  return -2;
+	    
+	    daemon_report(LOG_INFO, s_str);
+	    if(s_str)
+	      free(s_str);
     }
 
   /*
@@ -121,12 +113,11 @@ int handle_keys(unsigned char *buf, t_client *c)
    * else : stay FALSE
    */
 
-       daemon_report(LOG_INFO, "test1");
-  if (c->shared_key)
-    {
-      c->is_key = TRUE;
-      return 1;
-    }
-  else
-    return -1;
+	if (c->shared_key)
+	  {
+	    	c->is_key = TRUE;
+	    	return 1;
+	  }
+	else
+	  	return -1;
 }

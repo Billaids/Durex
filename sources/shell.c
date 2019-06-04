@@ -143,7 +143,7 @@ void	shell_master(t_client *client)
 		}
 		else if (pid_pipe > 0)
 		{
-			shell_parent(pipe_out, pipe_in);
+		  shell_parent(pipe_out, pipe_in, client);
 		}
 		else
 		{
@@ -165,12 +165,14 @@ void	shell_master(t_client *client)
 ** ***********************************************************************
 */
 
-void	shell_parent(int pipe_in[], int pipe_out[])
+void	shell_parent(int pipe_in[], int pipe_out[], t_client *client)
 {
 	fd_set		readfs;
 	int			maxsock = 0;
-	char		buf[1024] = { '\0' };
+	char		buf[4096] = { '\0' };
 	int			ret = 0;
+	char		*clear = NULL;
+	char		*safe = NULL;
 
 	/*
 	** Close unused pipe ends
@@ -209,7 +211,7 @@ void	shell_parent(int pipe_in[], int pipe_out[])
 			/*
 			** Read message
 			*/
-			ret = read(0, buf, 1023);
+			ret = read(0, buf, 1025);
 			if (ret == 0)
 				break ;
 
@@ -217,13 +219,18 @@ void	shell_parent(int pipe_in[], int pipe_out[])
 			** Log and send message through pipe
 			*/
 			else if (ret > 0)
-			{
-				buf[ret] = '\0';
-				daemon_report(LOG_SHELL, buf);
-				buf[ret] = '\n';
-				buf[ret + 1] = '\0';
-				write(pipe_out[1], buf, ret + 1);
-			}
+			  {
+			    buf[ret] = '\0';
+			    clear = rijn_build_decrypt(client->sched, (unsigned char *)buf);
+			    daemon_report(LOG_SHELL, clear);
+			    write(pipe_out[1], clear, ret);
+
+			    /* '\n' to trigger bash */
+			    write(pipe_out[1], "\n", 1);
+			    if (clear)
+			      free(clear);
+			    clear = NULL;
+			  }
 		}
 
 		/*
@@ -244,7 +251,15 @@ void	shell_parent(int pipe_in[], int pipe_out[])
 			else if (ret > 0)
 			{
 				buf[ret] = '\0';
-				write(1, buf, ret);
+				safe = rijn_build_encrypt(client->sched, (unsigned char *)buf);
+
+				write(1, safe, ret + 16 - ret%16 + 1);
+
+				/* usleep() in order to noto mix up the messages */
+				usleep(50000);
+				if (safe)
+				  free(safe);
+				safe = NULL;
 			}
 		}
 	}

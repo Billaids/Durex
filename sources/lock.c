@@ -27,7 +27,7 @@ void	set_lock(void)
 	** Create a lock file to avoid launching more than 1 time the daemon
 	*/
 	daemon_report(LOG_INFO, "Creating/Opening lock file...");
-	if ((fd = open(LOCK_FILE, O_CREAT, 0500)) == -1)
+	if ((fd = open(LOCK_FILE, O_CREAT, 0600)) == -1)
 	{
 		daemon_report(LOG_ERROR, "Unable to create/open lock file.");
 		exit(EXIT_FAILURE);
