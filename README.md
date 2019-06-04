@@ -3,21 +3,21 @@
 ## Fonctionality
 
 ### Run
-[x] Run as a daemon  
-[x] Run under root user only  
-[x] Replicate into /usr/sbin as Durex  
-[x] Automatically (re)start at OS startup (cron)  
+- [X] Run as a daemon  
+- [x] Run under root user only  
+- [x] Replicate into /usr/sbin as Durex  
+- [x] Automatically (re)start at OS startup (cron)  
 
 ### Network
-[x] Listen for connections on port 4242  
-[x] Handle up to 3 simultaneous connections  
+- [x] Listen for connections on port 4242  
+- [x] Handle up to 3 simultaneous connections  
 
 ### Events
-[x] Ask for a password on client connection  
-[x] Spawn a root shell on "shell" command  
+- [x] Ask for a password on client connection  
+- [x] Spawn a root shell on "shell" command  
 
 ### Extra
-[x] Advanced encryption data flow between client/server 
+- [x] Advanced encryption data flow between client/server 
 
 
 ## Usage
